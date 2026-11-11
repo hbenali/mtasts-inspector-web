@@ -1,0 +1,8 @@
+# MTA-STS Checker
+
+> Free, single-page tool to inspect a domain's MTA-STS (RFC 8461) and TLS-RPT (RFC 8460) setup and generate the policy and TXT records.
+
+Static site (no backend, no build step, no dependencies) at https://mtasts.hbenali.ovh. Reads the _mta-sts and _smtp._tls TXT records and the MX hosts via DNS-over-HTTPS, validates a pasted MTA-STS policy (version, mode, mx patterns, max_age) against the real MX hosts, and generates the policy file and both TXT records. The policy file is not fetched by the page (browsers block it by CORS); a curl command and a paste box are provided instead.
+
+## Pages
+- [MTA-STS Checker](https://mtasts.hbenali.ovh/): the tool itself. `?domain=example.com` runs a lookup on load.

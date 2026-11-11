@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTA-STS Checker — MTA-STS and TLS-RPT Inspector</title>
+  <meta name="description" content="Free MTA-STS and TLS-RPT checker (RFC 8461, RFC 8460). Read a domain's _mta-sts and _smtp._tls records, validate the policy file against its MX hosts, and generate the policy and both TXT records.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://mtasts.hbenali.ovh/">
+
+  <!-- Security (static hosting: no custom HTTP headers, so CSP/referrer are set here; X-Frame-Options/X-Content-Type-Options need a real header and aren't achievable via meta) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://dns.google; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MTA-STS Checker — MTA-STS and TLS-RPT Inspector">
+  <meta property="og:description" content="Check a domain\'s MTA-STS and TLS-RPT records, validate its policy and generate the files.">
+  <meta property="og:url" content="https://mtasts.hbenali.ovh/">
+  <meta property="og:site_name" content="MTA-STS Checker">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mtasts.hbenali.ovh/favicon.svg">
+  <meta property="og:image:type" content="image/svg+xml">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MTA-STS Checker — MTA-STS and TLS-RPT Inspector">
+  <meta name="twitter:description" content="Check a domain\'s MTA-STS and TLS-RPT records, validate its policy and generate the files.">
+  <meta name="twitter:image" content="https://mtasts.hbenali.ovh/favicon.svg">
+
+  <!-- SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0c1218" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4efe4" media="(prefers-color-scheme: light)">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MTA-STS Checker">
+
+  <!-- dns.google is only hit on-demand after a lookup -->
+  <link rel="dns-prefetch" href="https://dns.google">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "url": "https://mtasts.hbenali.ovh/",
+        "name": "MTA-STS Checker",
+        "description": "Free MTA-STS and TLS-RPT checker and generator.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://mtasts.hbenali.ovh/?domain={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "WebApplication",
+        "name": "MTA-STS Checker",
+        "url": "https://mtasts.hbenali.ovh/",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "description": "Check a domain's MTA-STS and TLS-RPT DNS records, validate a pasted MTA-STS policy against its MX hosts, and generate the policy file and TXT records.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
+  }
+  </script>
+
+
+  <link rel="preload" href="/fonts/big-shoulders-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/newsreader-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/site.css">
+</head>
+
+<body>
+<a class="skip" href="#domainInput">Skip to the tool</a>
+<header class="hero">
+  <div class="wrap">
+    <h1 class="display">
+      <span class="line"><span>MTA-STS</span></span>
+      <span class="line"><span>check &amp; build</span></span>
+    </h1>
+    <p class="lead">Make sure mail to a domain is <strong>delivered over verified TLS</strong>, and that you hear about it when it is not.</p>
+  </div>
+</header>
+
+<main>
+  <section class="block wrap" aria-labelledby="lookupTitle">
+    <h2 class="block-title" id="lookupTitle">Check a domain</h2>
+    <p class="block-note">Reads the <code>_mta-sts</code> and <code>_smtp._tls</code> TXT records and the MX hosts through Google DNS over HTTPS.</p>
+
+    <div class="field input-group">
+      <label for="domainInput">
+        <span>Domain name</span>
+        <i>example.com</i>
+      </label>
+      <div class="field-row domain-input-wrapper">
+        <input type="text" id="domainInput" placeholder="e.g. example.com" value="example.com" spellcheck="false" autocomplete="off">
+        <button class="btn" id="checkBtn">
+          <span id="btnText">Check MTA-STS</span>
+          <span id="btnLoader" hidden></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="result-area" id="resultContainer" aria-live="polite">
+      <div class="state empty empty-state" id="placeholderState">
+        <p>Enter a domain and click "Check MTA-STS".<br>MTA-STS (RFC 8461) lets a domain require TLS with a valid certificate for its mail servers; TLS-RPT (RFC 8460) sends it reports when that fails.</p>
+      </div>
+      <div id="recordsContainer" hidden></div>
+      <div id="errorContainer" hidden></div>
+    </div>
+  </section>
+
+  <section class="block wrap" id="policySection" aria-labelledby="policyTitle">
+    <h2 class="block-title" id="policyTitle">Check the policy file</h2>
+    <p class="block-note">The policy lives at <code>https://mta-sts.&lt;domain&gt;/.well-known/mta-sts.txt</code>. This page cannot fetch it: browsers only allow that cross-origin request if the policy server sends CORS headers, and almost none do (tested: gmail.com, outlook.com, yahoo.com and fastmail.com are blocked, only a few such as proton.me answer). So fetch it yourself and paste it here.</p>
+
+    <div data-needs-domain hidden>
+      <div class="preview-label">1. Fetch it (the command is built from the domain you checked)</div>
+      <div class="preview" id="curlBox"></div>
+      <p class="hint-line">or open <a class="link" id="policyLink" href="#" target="_blank" rel="noopener noreferrer"></a> in a browser tab and copy the text. A policy served with a redirect or a bad certificate is already a failure: senders will not use it.</p>
+    </div>
+    <p class="hint-line" id="curlHint">Run a lookup above to get the curl command for the domain.</p>
+
+    <div class="field">
+      <label for="policyInput">2. Paste the policy text</label>
+      <textarea id="policyInput" rows="8" spellcheck="false" autocomplete="off" placeholder="version: STSv1&#10;mode: enforce&#10;mx: mail.example.com&#10;max_age: 604800"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn" id="validatePolicyBtn" type="button">Validate policy</button>
+    </div>
+    <div class="result-area" id="policyResult" aria-live="polite"></div>
+  </section>
+
+  <section class="block wrap generator-section" aria-labelledby="genTitle">
+    <h2 class="block-title" id="genTitle">Policy and record generator</h2>
+    <p class="block-note">Builds the policy file and the two TXT records for the domain in the box above. Start in <code>testing</code>, watch the TLS-RPT reports, then switch to <code>enforce</code> and change the <code>id</code>.</p>
+    <div class="gen-grid">
+      <div class="gen-row">
+        <label class="gen-label" for="genMode">Mode</label>
+        <select id="genMode">
+          <option value="testing" selected>testing (report only)</option>
+          <option value="enforce">enforce (refuse on TLS failure)</option>
+          <option value="none">none (switch MTA-STS off)</option>
+        </select>
+      </div>
+      <div class="gen-row">
+        <label class="gen-label" for="genAge">max_age (seconds)</label>
+        <input type="number" id="genAge" min="0" max="31557600" value="604800" inputmode="numeric">
+        <span class="hint">cache time for senders, 86400 to 31557600: <b id="genAgeHint"></b></span>
+      </div>
+      <div class="gen-row">
+        <label class="gen-label" for="genMx">MX hosts allowed (one per line)</label>
+        <textarea id="genMx" rows="4" spellcheck="false" autocomplete="off" placeholder="mail.example.com&#10;*.mail.example.com"></textarea>
+        <span class="hint">hostnames; <code>*.host</code> matches exactly one label below host</span>
+      </div>
+      <div class="actions">
+        <button class="btn quiet" id="loadMxBtn" type="button">Load MX from lookup</button>
+        <button class="btn quiet" id="loadRuaBtn" type="button">Load rua from lookup</button>
+      </div>
+      <div class="field-error" id="loadMxHint" role="status"></div>
+      <div class="gen-row">
+        <label class="gen-label" for="genId">Policy id</label>
+        <input type="text" id="genId" maxlength="32" spellcheck="false" autocomplete="off">
+        <span class="hint">1 to 32 letters or digits; change it every time the policy changes</span>
+      </div>
+      <div class="actions"><button class="btn quiet" id="newIdBtn" type="button">New id from current time (UTC)</button></div>
+      <div class="gen-row">
+        <label class="gen-label" for="genRua">TLS-RPT report address (rua)</label>
+        <input type="text" id="genRua" placeholder="mailto:tlsrpt@example.com" spellcheck="false" autocomplete="off">
+        <span class="hint">mailto:address or https://endpoint, comma-separated</span>
+      </div>
+      <div class="field-error" id="genError" role="alert"></div>
+
+      <div>
+        <div class="preview-label">mta-sts.txt</div>
+        <div class="preview" id="outPolicy"></div>
+        <p class="hint-line" id="policyWhere"></p>
+        <div class="actions"><span id="copyPolicy"></span></div>
+      </div>
+      <div>
+        <div class="preview-label">TXT record for MTA-STS</div>
+        <div class="preview" id="outSts"></div>
+        <div class="actions"><span id="copySts"></span></div>
+      </div>
+      <div>
+        <div class="preview-label">TXT record for TLS-RPT</div>
+        <div class="preview" id="outRpt"></div>
+        <div class="actions"><span id="copyRpt"></span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="foot">
+  <footer>
+    <span>using <strong>Google DNS over HTTPS</strong></span>
+    <span>MTA-STS (RFC 8461) and TLS-RPT (RFC 8460)</span>
+    <a href="https://hbenali.ovh" target="_blank" rel="noopener noreferrer">hbenali.ovh</a>
+  </footer>
+</div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
