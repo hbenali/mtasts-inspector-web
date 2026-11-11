@@ -303,7 +303,8 @@
   var polUrl = $('policyLink');
   function policyUrl(domain) { return 'https://mta-sts.' + domain + '/.well-known/mta-sts.txt'; }
   function showPolicyHelp(domain) {
-    // domain is already validated (letters, digits, dots, hyphens only)
+    // Re-check here, right before the URL is built: only a plain hostname may reach href.
+    if (!/^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/i.test(domain)) return;
     var url = policyUrl(domain);
     curlBox.textContent = 'curl -si ' + url;
     $('curlHint').hidden = true;
